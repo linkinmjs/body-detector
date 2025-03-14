@@ -1,1 +1,43 @@
 output.avi
+
+# Archivos de Python compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Configuración de entornos virtuales
+venv/
+.env/
+*.venv
+Pipfile
+Pipfile.lock
+
+# Archivos de dependencias de Python
+*.log
+requirements.txt
+
+# Configuración de IDEs y editores
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Archivos del sistema (MacOS y Windows)
+.DS_Store
+Thumbs.db
+
+# Archivos de salida de OpenCV
+*.avi
+*.mp4
+*.mov
+*.webm
+*.mkv
+
+# Carpetas de datos temporales
+data/
+output/
+results/
+
+# Archivos de depuración y caché
+*.bak
+*.swp
