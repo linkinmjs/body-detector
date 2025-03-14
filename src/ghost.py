@@ -15,17 +15,21 @@ class GhostEntity:
         self.start_time = time.time()  # Guardamos el tiempo en que comenzó la grabación
 
     def draw(self, frame, frame_idx, ghost_index):
-        """Dibuja la entidad fantasma en la imagen actual y muestra su timer en la parte inferior."""
+        """Dibuja la entidad fantasma en la imagen actual y reinicia su timer en cada ciclo."""
         if len(self.frames_landmarks) == 0:
             return
 
-        frame_idx %= len(self.frames_landmarks)
+        frame_idx %= len(self.frames_landmarks)  # Repetir animación en bucle
         landmarks = self.frames_landmarks[frame_idx]
 
         h, w, _ = frame.shape
-        elapsed_time = round(time.time() - self.start_time, 1)  # Calcula el tiempo transcurrido
 
-        # Posición del timer en la parte inferior (cada timer se dibuja en una nueva línea)
+        # Calculamos el tiempo en base al frame actual
+        total_frames = len(self.frames_landmarks)
+        fps = 30  # Suponiendo que trabajamos a 30 FPS
+        elapsed_time = round((frame_idx / fps) % (total_frames / fps), 1)  # Reinicia cada ciclo
+
+        # Posición del timer en la parte inferior
         timer_x = 50
         timer_y = h - (30 * ghost_index) - 20  # Espaciado desde abajo hacia arriba
 
