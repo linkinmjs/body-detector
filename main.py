@@ -3,6 +3,8 @@ import time
 from src.detector import PoseDetector
 from src.ghost import GhostEntity
 from src.video_recorder import VideoRecorder
+from src.video_exporter import FinalVideoExporter
+
 
 # Configuración de la cámara
 cap = cv2.VideoCapture(0)
@@ -15,6 +17,8 @@ ghost_entities = []
 video_recorder = None
 recording = False
 frame_counter = 0  # Control de animación de los fantasmas
+exporter = FinalVideoExporter("final_output.avi", (frame_width, frame_height))
+
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -42,10 +46,11 @@ while cap.isOpened():
             ghost_entities[-1].frames_landmarks.append(landmarks_current.copy())
 
     # Dibujar los fantasmas acumulados
-    for ghost in ghost_entities:
-        ghost.draw(frame, frame_counter)
+    for i, ghost in enumerate(ghost_entities):
+        ghost.draw(frame, frame_counter, i)  # Pasamos el índice del fantasma
 
     frame_counter += 1  # Control de animación de los fantasmas
+    exporter.write_frame(frame)
 
     # Mostrar imagen
     cv2.imshow('Pose Detection with Configurable Ghosts', frame)
@@ -83,4 +88,5 @@ while cap.isOpened():
 
 # Liberar recursos
 cap.release()
+exporter.close()
 cv2.destroyAllWindows()

@@ -1,3 +1,4 @@
+import time
 import cv2
 import mediapipe as mp
 from mediapipe.framework.formats import landmark_pb2
@@ -11,9 +12,10 @@ class GhostEntity:
     def __init__(self, frames_landmarks):
         self.frames_landmarks = frames_landmarks
         self.display_mode = "skeleton"  # "points", "skeleton", "face_box", "body_box"
+        self.start_time = time.time()  # Guardamos el tiempo en que comenzó la grabación
 
-    def draw(self, frame, frame_idx):
-        """Dibuja la entidad fantasma en la imagen actual."""
+    def draw(self, frame, frame_idx, ghost_index):
+        """Dibuja la entidad fantasma en la imagen actual y muestra su timer en la parte inferior."""
         if len(self.frames_landmarks) == 0:
             return
 
@@ -21,6 +23,14 @@ class GhostEntity:
         landmarks = self.frames_landmarks[frame_idx]
 
         h, w, _ = frame.shape
+        elapsed_time = round(time.time() - self.start_time, 1)  # Calcula el tiempo transcurrido
+
+        # Posición del timer en la parte inferior (cada timer se dibuja en una nueva línea)
+        timer_x = 50
+        timer_y = h - (30 * ghost_index) - 20  # Espaciado desde abajo hacia arriba
+
+        cv2.putText(frame, f"Layer {ghost_index+1} - Timer: {elapsed_time}s", 
+                    (timer_x, timer_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
         if self.display_mode == "points":
             for point in landmarks:
