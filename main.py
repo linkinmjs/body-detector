@@ -17,7 +17,7 @@ ghost_entities = []
 video_recorder = None
 recording = False
 frame_counter = 0  # Control de animación de los fantasmas
-exporter = FinalVideoExporter("final_output.avi", (frame_width, frame_height))
+exporter = FinalVideoExporter("final_output.mp4", (frame_width, frame_height), codec="mp4v")
 
 
 while cap.isOpened():
