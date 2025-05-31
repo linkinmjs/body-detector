@@ -1,24 +1,18 @@
 import cv2
-import time
 from src.detector import PoseDetector
 from src.ghost import GhostEntity
-from src.video_recorder import VideoRecorder
-from src.video_exporter import FinalVideoExporter
+from src.main_layer_recorder import MainLayerRecorder
 
-
-# Configuración de la cámara
+# Inicializar cámara
 cap = cv2.VideoCapture(0)
-frame_width = int(cap.get(3))
-frame_height = int(cap.get(4))
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 # Inicializar módulos
 pose_detector = PoseDetector()
+main_layer = None
 ghost_entities = []
-video_recorder = None
-recording = False
-frame_counter = 0  # Control de animación de los fantasmas
-exporter = FinalVideoExporter("final_output.mp4", (frame_width, frame_height), codec="mp4v")
-
+frame_counter = 0
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -28,65 +22,53 @@ while cap.isOpened():
     # Detección de pose
     results = pose_detector.detect(frame)
 
-    # Obtener dimensiones del frame
+    # Obtener dimensiones y landmarks
     h, w, _ = frame.shape
     landmarks_current = []
 
     if results.pose_landmarks:
-        # Dibujar landmarks actuales
         pose_detector.draw_landmarks(frame, results)
 
-        # Guardar coordenadas de landmarks actuales
+        # Convertir landmarks a píxeles
         for lm in results.pose_landmarks.landmark:
             cx, cy = int(lm.x * w), int(lm.y * h)
             landmarks_current.append((cx, cy))
 
-        # Si está grabando, almacenar la trayectoria del esqueleto actual
-        if recording:
-            ghost_entities[-1].frames_landmarks.append(landmarks_current.copy())
+    # Si se está grabando la capa principal, guardar frame
+    if main_layer:
+        main_layer.write_frame(frame)
+        main_layer.draw_status(frame)
 
-    # Dibujar los fantasmas acumulados
+    # Dibujar fantasmas (si hay alguno)
     for i, ghost in enumerate(ghost_entities):
-        ghost.draw(frame, frame_counter, i)  # Pasamos el índice del fantasma
+        ghost.draw(frame, frame_counter, i)
 
-    frame_counter += 1  # Control de animación de los fantasmas
-    exporter.write_frame(frame)
+    frame_counter += 1
 
-    # Mostrar imagen
-    cv2.imshow('Pose Detection with Configurable Ghosts', frame)
+    # Mostrar ventana principal
+    cv2.imshow('Pose Detector - Main Layer', frame)
 
-    # Manejo del teclado
+    # Control de teclas
     key = cv2.waitKey(1) & 0xFF
-    if key == ord('q'):  # Salir con 'q'
+
+    # Salir
+    if key == ord('q'):
         break
-    elif key == ord(' '):  # Iniciar/detener grabación con 'espacio'
-        if not recording:
-            # Iniciar grabación y agregar nuevo fantasma
-            video_recorder = VideoRecorder("output.avi", (frame_width, frame_height))
-            video_recorder.start_recording(cap)
-            recording = True
-            ghost_entities.append(GhostEntity([]))  # Nueva entidad fantasma
-        else:
-            # Detener grabación
-            recording = False
-            video_recorder.stop_recording()
-            frame_counter = 0  # Reiniciar la animación de los landmarks
 
-    # Cambiar el modo de visualización de los fantasmas
-    elif key == ord('1'):
-        for ghost in ghost_entities:
-            ghost.display_mode = "points"
-    elif key == ord('2'):
-        for ghost in ghost_entities:
-            ghost.display_mode = "skeleton"
-    elif key == ord('3'):
-        for ghost in ghost_entities:
-            ghost.display_mode = "face_box"
-    elif key == ord('4'):
-        for ghost in ghost_entities:
-            ghost.display_mode = "body_box"
+    # Espacio → iniciar o pausar grabación
+    elif key == ord(' '):
+        if main_layer is None:
+            main_layer = MainLayerRecorder((frame_width, frame_height))
+            main_layer.toggle()  # comenzar grabación
+        elif not main_layer.is_finished():
+            main_layer.toggle()  # pausar o continuar
 
-# Liberar recursos
+    # Enter → finalizar y exportar capa principal
+    elif key == 13:  # Enter
+        if main_layer and main_layer.is_paused():
+            main_layer.stop_and_finalize()
+            # 🔜 Reproducir el video + overlay del fantasma (lo hacemos en el próximo paso)
+
+# Finalizar
 cap.release()
-exporter.close()
 cv2.destroyAllWindows()
