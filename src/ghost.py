@@ -1,5 +1,7 @@
 import time
 import cv2
+import os
+import json
 import mediapipe as mp
 from mediapipe.framework.formats import landmark_pb2
 
@@ -7,31 +9,29 @@ mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
 class GhostEntity:
-    """Clase para almacenar y dibujar la trayectoria de un 'fantasma'."""
-    
-    def __init__(self, frames_landmarks):
-        self.frames_landmarks = frames_landmarks
+    def __init__(self, frames_landmarks=None):
+        self.frames = frames_landmarks if frames_landmarks is not None else []
         self.display_mode = "skeleton"  # "points", "skeleton", "face_box", "body_box"
         self.start_time = time.time()  # Guardamos el tiempo en que comenzó la grabación
 
+    def add_frame(self, landmark_list):
+        self.frames.append(landmark_list)
+
     def draw(self, frame, frame_idx, ghost_index):
-        """Dibuja la entidad fantasma en la imagen actual y reinicia su timer en cada ciclo."""
-        if len(self.frames_landmarks) == 0:
+        if len(self.frames) == 0:
             return
 
-        frame_idx %= len(self.frames_landmarks)  # Repetir animación en bucle
-        landmarks = self.frames_landmarks[frame_idx]
+        frame_idx %= len(self.frames)  # Repetir animación en bucle
+        landmarks = self.frames[frame_idx]
 
         h, w, _ = frame.shape
+        total_frames = len(self.frames)
+        fps = 30
+        elapsed_time = round((frame_idx / fps) % (total_frames / fps), 1)
 
-        # Calculamos el tiempo en base al frame actual
-        total_frames = len(self.frames_landmarks)
-        fps = 30  # Suponiendo que trabajamos a 30 FPS
-        elapsed_time = round((frame_idx / fps) % (total_frames / fps), 1)  # Reinicia cada ciclo
-
-        # Posición del timer en la parte inferior
+        # Timer en la parte inferior
         timer_x = 50
-        timer_y = h - (30 * ghost_index) - 20  # Espaciado desde abajo hacia arriba
+        timer_y = h - (30 * ghost_index) - 20
 
         cv2.putText(frame, f"Layer {ghost_index+1} - Timer: {elapsed_time}s", 
                     (timer_x, timer_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
@@ -66,3 +66,10 @@ class GhostEntity:
                 x_coords = [landmarks[i][0] for i in body_points]
                 y_coords = [landmarks[i][1] for i in body_points]
                 cv2.rectangle(frame, (min(x_coords), min(y_coords)), (max(x_coords), max(y_coords)), (255, 255, 0), 2)
+
+    def export_to_json(self, ghost_id):
+        filename = f"ghost_{ghost_id}.json"
+        path = os.path.join("data", filename)
+        with open(path, "w") as f:
+            json.dump(self.frames, f)
+        print(f"✅ Fantasma exportado como {filename}")
