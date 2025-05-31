@@ -8,3 +8,5 @@ body-detector/
 │── data/                # Carpeta para almacenar videos grabados
 │── README.md            # Documentación del proyecto
 │── requirements.txt     # Dependencias del proyecto
+
+![Diagrama](image.png)
